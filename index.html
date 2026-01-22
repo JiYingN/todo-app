@@ -179,6 +179,20 @@
     </header>
 
     <main class="flex-grow w-full px-4 md:px-8 py-8">
+        <!-- AI助手提示条 -->
+        <div id="aiAssistantBanner" class="max-w-6xl mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-md p-4 text-white flex items-center justify-between cursor-pointer transition-all duration-300 hover:shadow-lg">
+            <div class="flex items-center">
+                <i class="fa fa-robot text-2xl mr-3"></i>
+                <div>
+                    <h3 class="font-semibold">AI任务助手已上线！</h3>
+                    <p class="text-sm opacity-90">用自然语言描述你的任务，AI帮你自动创建</p>
+                </div>
+            </div>
+            <button id="showAiAssistant" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                立即体验
+            </button>
+        </div>
+        
         <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-card overflow-hidden transition-all duration-300 hover:shadow-card-hover">
             <!-- 导航标签 -->
             <div class="flex border-b">
@@ -209,15 +223,14 @@
                         </div>
                         <!-- 任务分类 -->
                         <div>
-                            <label for="taskCategory" class="block text-sm font-medium text-gray-700 mb-1">任务分类</label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="taskCategory" class="block text-sm font-medium text-gray-700">任务分类</label>
+                                <button id="manageCategories" class="text-xs text-primary hover:text-primary/80 focus:outline-none transition-colors">
+                                    <i class="fa fa-cog mr-1"></i>管理分类
+                                </button>
+                            </div>
                             <select id="taskCategory" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 bg-white">
-                                <option value="bms">BMS</option>
-                                <option value="nvh">NVH</option>
-                                <option value="dynamic">动态性能</option>
-                                <option value="feishu_ai">飞书AI诊断</option>
-                                <option value="other">其他</option>
-                                <option value="learning">学习</option>
-                                <option value="huangshan">黄山</option>
+                                <!-- 分类选项将通过JavaScript动态生成 -->
                             </select>
                         </div>
                         <!-- 优先级选择 -->
@@ -327,6 +340,192 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- 分类管理模态框 -->
+            <div id="categoryManagerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+                <div class="bg-white rounded-xl shadow-elevated max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="categoryManagerModalContent">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center text-white mr-3">
+                                <i class="fa fa-tags text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800">分类管理</h3>
+                        </div>
+                        <button id="closeCategoryManagerModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-sm font-medium text-gray-700">自定义分类</h4>
+                                <button id="addNewCategory" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors flex items-center">
+                                    <i class="fa fa-plus mr-1"></i>添加分类
+                                </button>
+                            </div>
+                            
+                            <div id="categoriesList" class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                <!-- 分类列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fa fa-info-circle text-blue-500"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        <strong>提示：</strong> 您可以拖拽分类项来调整显示顺序。系统默认分类（如BMS、NVH等）不可删除，但可以修改颜色。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button id="cancelCategoryManager" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                                取消
+                            </button>
+                            <button id="saveCategoryChanges" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                                保存更改
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 添加/编辑分类模态框 -->
+            <div id="editCategoryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+                <div class="bg-white rounded-xl shadow-elevated max-w-md w-full transform transition-all scale-95 opacity-0" id="editCategoryModalContent">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-100">
+                        <h3 id="editCategoryTitle" class="text-lg font-semibold text-gray-800">添加新分类</h3>
+                        <button id="closeEditCategoryModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <form id="editCategoryForm" class="space-y-4">
+                            <input type="hidden" id="editCategoryId">
+                            <div>
+                                <label for="editCategoryName" class="block text-sm font-medium text-gray-700 mb-1">分类名称 <span class="text-accent">*</span></label>
+                                <input type="text" id="editCategoryName" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200" placeholder="输入分类名称..." required>
+                            </div>
+                            <div>
+                                <label for="editCategoryKey" class="block text-sm font-medium text-gray-700 mb-1">分类标识 <span class="text-accent">*</span></label>
+                                <input type="text" id="editCategoryKey" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200" placeholder="英文小写，无空格..." required>
+                                <p class="text-xs text-gray-500 mt-1">用于系统识别的唯一标识，建议使用英文小写字母和下划线</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">分类颜色</label>
+                                <div class="grid grid-cols-6 gap-2">
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-blue-100 border-2 border-transparent hover:border-blue-500 transition-colors" data-color="bg-blue-100 text-blue-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-green-100 border-2 border-transparent hover:border-green-500 transition-colors" data-color="bg-green-100 text-green-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-purple-100 border-2 border-transparent hover:border-purple-500 transition-colors" data-color="bg-purple-100 text-purple-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-pink-100 border-2 border-transparent hover:border-pink-500 transition-colors" data-color="bg-pink-100 text-pink-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-yellow-100 border-2 border-transparent hover:border-yellow-500 transition-colors" data-color="bg-yellow-100 text-yellow-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-indigo-100 border-2 border-transparent hover:border-indigo-500 transition-colors" data-color="bg-indigo-100 text-indigo-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-red-100 border-2 border-transparent hover:border-red-500 transition-colors" data-color="bg-red-100 text-red-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-teal-100 border-2 border-transparent hover:border-teal-500 transition-colors" data-color="bg-teal-100 text-teal-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-orange-100 border-2 border-transparent hover:border-orange-500 transition-colors" data-color="bg-orange-100 text-orange-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-gray-100 border-2 border-transparent hover:border-gray-500 transition-colors" data-color="bg-gray-100 text-gray-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-cyan-100 border-2 border-transparent hover:border-cyan-500 transition-colors" data-color="bg-cyan-100 text-cyan-800"></button>
+                                    <button type="button" class="color-option w-8 h-8 rounded-full bg-lime-100 border-2 border-transparent hover:border-lime-500 transition-colors" data-color="bg-lime-100 text-lime-800"></button>
+                                </div>
+                                <input type="hidden" id="editCategoryColor" value="bg-blue-100 text-blue-800">
+                            </div>
+                        </form>
+                        
+                        <div class="flex justify-end space-x-3 mt-4">
+                            <button id="cancelEditCategory" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                                取消
+                            </button>
+                            <button id="saveCategory" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                                保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI助手模态框 -->
+            <div id="aiAssistantModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+                <div class="bg-white rounded-xl shadow-elevated max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="aiAssistantModalContent">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white mr-3">
+                                <i class="fa fa-robot text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800">AI任务助手</h3>
+                        </div>
+                        <button id="closeAiAssistantModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label for="aiInput" class="block text-sm font-medium text-gray-700 mb-2">告诉AI你的待办事项</label>
+                            <div class="relative">
+                                <textarea id="aiInput" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none" placeholder="例如：明天下午3点参加项目会议，这是紧急任务..."></textarea>
+                                <div class="absolute bottom-3 right-3 text-xs text-gray-400">
+                                    <i class="fa fa-lightbulb-o mr-1"></i>试试："周五前完成BMS报告，优先级P0"
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex items-center mb-2">
+                                <h4 class="text-sm font-medium text-gray-700">AI识别示例：</h4>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <span class="text-gray-500">时间识别：</span>
+                                    <span class="text-gray-700">"明天下午3点" → 2024-01-23 15:00</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <span class="text-gray-500">优先级识别：</span>
+                                    <span class="text-gray-700">"紧急"、"重要" → P0</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <span class="text-gray-500">分类识别：</span>
+                                    <span class="text-gray-700">"BMS报告" → BMS分类</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <span class="text-gray-500">任务类型：</span>
+                                    <span class="text-gray-700">"会议"、"报告"、"学习" → 自动分类</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="aiProcessing" class="hidden">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mr-3"></div>
+                                <p class="text-gray-600">AI正在解析你的任务...</p>
+                            </div>
+                        </div>
+                        
+                        <div id="aiResult" class="hidden">
+                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-4">
+                                <h4 class="font-medium text-blue-800 mb-2">识别结果</h4>
+                                <div id="aiResultContent" class="space-y-2 text-sm">
+                                    <!-- AI解析结果将在这里显示 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button id="cancelAiAssistant" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                                取消
+                            </button>
+                            <button id="processAiInput" class="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-all duration-200 flex items-center">
+                                <i class="fa fa-magic mr-2"></i>智能解析
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- 回收站区域 -->
             <div id="trashSection" class="p-6 md:p-8 hidden">
@@ -376,11 +575,14 @@
             // 任务数据存储
             let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
             let trash = JSON.parse(localStorage.getItem('trash')) || [];
+            let categories = JSON.parse(localStorage.getItem('categories')) || getDefaultCategories();
             let currentFilter = 'all';
             let currentCategory = 'all';
             let editingTaskId = null;
             let confirmCallback = null;
             let searchQuery = '';
+            let editingCategoryId = null;
+            let tempCategories = []; // 用于分类管理的临时数据
             
             // 为现有任务添加优先级属性（如果没有）
             tasks = tasks.map(task => {
@@ -453,7 +655,39 @@
                 taskDescription: document.getElementById('taskDescription'),
                 taskPriority: document.getElementById('taskPriority'),
                 taskId: document.getElementById('taskId'),
-                searchInput: document.getElementById('searchInput')
+                searchInput: document.getElementById('searchInput'),
+                // AI助手相关元素
+                aiAssistantBanner: document.getElementById('aiAssistantBanner'),
+                showAiAssistant: document.getElementById('showAiAssistant'),
+                aiAssistantModal: document.getElementById('aiAssistantModal'),
+                aiAssistantModalContent: document.getElementById('aiAssistantModalContent'),
+                closeAiAssistantModal: document.getElementById('closeAiAssistantModal'),
+                cancelAiAssistant: document.getElementById('cancelAiAssistant'),
+                processAiInput: document.getElementById('processAiInput'),
+                aiInput: document.getElementById('aiInput'),
+                aiProcessing: document.getElementById('aiProcessing'),
+                aiResult: document.getElementById('aiResult'),
+                aiResultContent: document.getElementById('aiResultContent'),
+                // 分类管理相关元素
+                manageCategories: document.getElementById('manageCategories'),
+                categoryManagerModal: document.getElementById('categoryManagerModal'),
+                categoryManagerModalContent: document.getElementById('categoryManagerModalContent'),
+                closeCategoryManagerModal: document.getElementById('closeCategoryManagerModal'),
+                cancelCategoryManager: document.getElementById('cancelCategoryManager'),
+                saveCategoryChanges: document.getElementById('saveCategoryChanges'),
+                addNewCategory: document.getElementById('addNewCategory'),
+                categoriesList: document.getElementById('categoriesList'),
+                editCategoryModal: document.getElementById('editCategoryModal'),
+                editCategoryModalContent: document.getElementById('editCategoryModalContent'),
+                closeEditCategoryModal: document.getElementById('closeEditCategoryModal'),
+                cancelEditCategory: document.getElementById('cancelEditCategory'),
+                saveCategory: document.getElementById('saveCategory'),
+                editCategoryTitle: document.getElementById('editCategoryTitle'),
+                editCategoryForm: document.getElementById('editCategoryForm'),
+                editCategoryId: document.getElementById('editCategoryId'),
+                editCategoryName: document.getElementById('editCategoryName'),
+                editCategoryKey: document.getElementById('editCategoryKey'),
+                editCategoryColor: document.getElementById('editCategoryColor')
             };
 
             // 初始化应用
@@ -470,6 +704,7 @@
                 elements.taskCategory.value = 'bms'; // 设置默认分类
                 
                 // 渲染界面
+                renderCategories();
                 renderTasks();
                 renderTrash();
                 updateTaskStats();
@@ -584,6 +819,48 @@
                     hideConfirmDialog();
                     if (typeof confirmCallback === 'function') {
                         confirmCallback(false);
+                    }
+                });
+                
+                // AI助手相关事件绑定
+                elements.aiAssistantBanner.addEventListener('click', showAiAssistantModal);
+                elements.showAiAssistant.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 防止事件冒泡
+                    showAiAssistantModal();
+                });
+                elements.closeAiAssistantModal.addEventListener('click', closeAiAssistantModal);
+                elements.cancelAiAssistant.addEventListener('click', closeAiAssistantModal);
+                elements.processAiInput.addEventListener('click', processAiInput);
+                
+                // 点击模态框外部关闭
+                elements.aiAssistantModal.addEventListener('click', function(e) {
+                    if (e.target === elements.aiAssistantModal) {
+                        closeAiAssistantModal();
+                    }
+                });
+                
+                // 分类管理相关事件绑定
+                elements.manageCategories.addEventListener('click', showCategoryManager);
+                elements.closeCategoryManagerModal.addEventListener('click', closeCategoryManager);
+                elements.cancelCategoryManager.addEventListener('click', closeCategoryManager);
+                elements.saveCategoryChanges.addEventListener('click', saveCategoryChanges);
+                elements.addNewCategory.addEventListener('click', addNewCategory);
+                
+                // 编辑分类相关事件绑定
+                elements.closeEditCategoryModal.addEventListener('click', closeEditCategoryModal);
+                elements.cancelEditCategory.addEventListener('click', closeEditCategoryModal);
+                elements.saveCategory.addEventListener('click', saveCategory);
+                
+                // 点击模态框外部关闭
+                elements.categoryManagerModal.addEventListener('click', function(e) {
+                    if (e.target === elements.categoryManagerModal) {
+                        closeCategoryManager();
+                    }
+                });
+                
+                elements.editCategoryModal.addEventListener('click', function(e) {
+                    if (e.target === elements.editCategoryModal) {
+                        closeEditCategoryModal();
                     }
                 });
             }
@@ -1194,20 +1471,8 @@
                                     <label for="task-${task.id}" class="ml-3 block text-sm font-medium text-gray-700 ${task.completed ? 'task-complete' : ''}">
                                         ${task.title}
                                         ${task.category ? 
-                                            `<span class="ml-2 px-2 py-0.5 text-xs rounded-full font-medium 
-                                                ${task.category === 'bms' ? 'bg-blue-100 text-blue-800' : 
-                                                  task.category === 'nvh' ? 'bg-green-100 text-green-800' : 
-                                                  task.category === 'dynamic' ? 'bg-purple-100 text-purple-800' : 
-                                                  task.category === 'feishu_ai' ? 'bg-pink-100 text-pink-800' : 
-                                                  task.category === 'other' ? 'bg-gray-100 text-gray-800' : 
-                                                  task.category === 'learning' ? 'bg-yellow-100 text-yellow-800' : 
-                                                  'bg-indigo-100 text-indigo-800'}">
-                                                ${task.category === 'feishu_ai' ? '飞书AI' : 
-                                                  task.category === 'dynamic' ? '动态性能' : 
-                                                  task.category === 'other' ? '其他' : 
-                                                  task.category === 'learning' ? '学习' : 
-                                                  task.category === 'huangshan' ? '黄山' : 
-                                                  task.category.toUpperCase()}
+                                            `<span class="ml-2 px-2 py-0.5 text-xs rounded-full font-medium ${getCategoryColor(task.category)}">
+                                                ${getCategoryName(task.category)}
                                             </span>` : ''}
                                         ${task.priority !== '-' && !task.completed ? 
                                             `<span class="ml-2 px-2 py-0.5 text-xs rounded-full font-medium 
@@ -1364,6 +1629,781 @@
 
             // 启动应用
             initApp();
+            
+            // AI助手相关函数
+            function showAiAssistantModal() {
+                elements.aiAssistantModal.classList.remove('hidden');
+                elements.aiAssistantModal.classList.add('flex');
+                setTimeout(() => {
+                    elements.aiAssistantModalContent.classList.remove('scale-95', 'opacity-0');
+                    elements.aiAssistantModalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                elements.aiInput.focus();
+            }
+            
+            function closeAiAssistantModal() {
+                elements.aiAssistantModalContent.classList.remove('scale-100', 'opacity-100');
+                elements.aiAssistantModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.aiAssistantModal.classList.remove('flex');
+                    elements.aiAssistantModal.classList.add('hidden');
+                    // 重置状态
+                    elements.aiInput.value = '';
+                    elements.aiProcessing.classList.add('hidden');
+                    elements.aiResult.classList.add('hidden');
+                }, 300);
+            }
+            
+            function processAiInput() {
+                const inputText = elements.aiInput.value.trim();
+                if (!inputText) {
+                    showToast('请输入任务描述', 'error');
+                    return;
+                }
+                
+                // 显示处理中状态
+                elements.aiProcessing.classList.remove('hidden');
+                elements.aiResult.classList.add('hidden');
+                elements.processAiInput.disabled = true;
+                
+                // 模拟AI处理延迟
+                setTimeout(() => {
+                    const parsedTask = parseNaturalLanguage(inputText);
+                    displayAiResult(parsedTask);
+                    elements.aiProcessing.classList.add('hidden');
+                    elements.aiResult.classList.remove('hidden');
+                    elements.processAiInput.disabled = false;
+                }, 1500);
+            }
+            
+            function parseNaturalLanguage(text) {
+                // 这里是模拟的自然语言解析逻辑
+                const task = {
+                    title: '',
+                    description: '',
+                    dueDateTime: '',
+                    priority: '-',
+                    category: 'other'
+                };
+                
+                // 提取标题（简单处理：取第一句话）
+                const firstSentence = text.split(/[。！？]/)[0];
+                task.title = firstSentence.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s]/g, '').trim();
+                
+                // 提取描述（剩余部分）
+                const remainingText = text.substring(firstSentence.length).trim();
+                if (remainingText) {
+                    task.description = remainingText;
+                }
+                
+                // 解析时间
+                task.dueDateTime = parseDateTime(text);
+                
+                // 解析优先级
+                task.priority = parsePriority(text);
+                
+                // 解析分类
+                task.category = parseCategory(text);
+                
+                return task;
+            }
+            
+            function parseDateTime(text) {
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                // 简单的时间表达式匹配
+                if (text.includes('明天') || text.includes('明日')) {
+                    if (text.includes('下午')) {
+                        const hourMatch = text.match(/下午(\d{1,2})[点:]/);
+                        if (hourMatch) {
+                            const hour = parseInt(hourMatch[1]) + 12;
+                            tomorrow.setHours(hour, 0, 0, 0);
+                            return tomorrow.toISOString();
+                        }
+                    } else if (text.includes('上午')) {
+                        const hourMatch = text.match(/上午(\d{1,2})[点:]/);
+                        if (hourMatch) {
+                            const hour = parseInt(hourMatch[1]);
+                            tomorrow.setHours(hour, 0, 0, 0);
+                            return tomorrow.toISOString();
+                        }
+                    } else if (text.includes('晚上')) {
+                        const hourMatch = text.match(/晚上(\d{1,2})[点:]/);
+                        if (hourMatch) {
+                            const hour = parseInt(hourMatch[1]) + 12;
+                            tomorrow.setHours(hour, 0, 0, 0);
+                            return tomorrow.toISOString();
+                        }
+                    }
+                    // 默认明天上午9点
+                    tomorrow.setHours(9, 0, 0, 0);
+                    return tomorrow.toISOString();
+                }
+                
+                // 检查是否包含"今天"
+                if (text.includes('今天') || text.includes('今日')) {
+                    if (text.includes('下午')) {
+                        const hourMatch = text.match(/下午(\d{1,2})[点:]/);
+                        if (hourMatch) {
+                            const hour = parseInt(hourMatch[1]) + 12;
+                            now.setHours(hour, 0, 0, 0);
+                            return now.toISOString();
+                        }
+                    } else if (text.includes('上午')) {
+                        const hourMatch = text.match(/上午(\d{1,2})[点:]/);
+                        if (hourMatch) {
+                            const hour = parseInt(hourMatch[1]);
+                            now.setHours(hour, 0, 0, 0);
+                            return now.toISOString();
+                        }
+                    }
+                }
+                
+                // 检查是否包含"周五"、"周六"等
+                const weekdayMap = {
+                    '周一': 1, '周二': 2, '周三': 3, '周四': 4, 
+                    '周五': 5, '周六': 6, '周日': 0
+                };
+                
+                for (const [day, dayNum] of Object.entries(weekdayMap)) {
+                    if (text.includes(day)) {
+                        const targetDate = new Date(now);
+                        const currentDay = now.getDay();
+                        const diff = (dayNum - currentDay + 7) % 7;
+                        targetDate.setDate(now.getDate() + diff);
+                        targetDate.setHours(9, 0, 0, 0);
+                        return targetDate.toISOString();
+                    }
+                }
+                
+                // 默认30分钟后
+                const defaultDate = new Date(now);
+                defaultDate.setMinutes(now.getMinutes() + 30);
+                return defaultDate.toISOString();
+            }
+            
+            function parsePriority(text) {
+                // 简单的优先级关键词匹配
+                const lowerText = text.toLowerCase();
+                if (lowerText.includes('紧急') || lowerText.includes('重要') || 
+                    lowerText.includes('p0') || lowerText.includes('最高')) {
+                    return 'P0';
+                } else if (lowerText.includes('中等') || lowerText.includes('一般') || 
+                           lowerText.includes('p1') || lowerText.includes('normal')) {
+                    return 'P1';
+                }
+                return '-';
+            }
+            
+            function parseCategory(text) {
+                // 简单的分类关键词匹配
+                const lowerText = text.toLowerCase();
+                if (lowerText.includes('bms')) {
+                    return 'bms';
+                } else if (lowerText.includes('nvh')) {
+                    return 'nvh';
+                } else if (lowerText.includes('动态') || lowerText.includes('性能')) {
+                    return 'dynamic';
+                } else if (lowerText.includes('飞书') || lowerText.includes('ai') || lowerText.includes('人工智能')) {
+                    return 'feishu_ai';
+                } else if (lowerText.includes('学习') || lowerText.includes('培训') || lowerText.includes('课程')) {
+                    return 'learning';
+                } else if (lowerText.includes('黄山')) {
+                    return 'huangshan';
+                }
+                return 'other';
+            }
+            
+            function displayAiResult(task) {
+                const categoryNames = {
+                    'bms': 'BMS',
+                    'nvh': 'NVH',
+                    'dynamic': '动态性能',
+                    'feishu_ai': '飞书AI诊断',
+                    'other': '其他',
+                    'learning': '学习',
+                    'huangshan': '黄山'
+                };
+                
+                elements.aiResultContent.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="w-24 text-gray-500">任务标题：</span>
+                        <span class="font-medium">${task.title}</span>
+                    </div>
+                    ${task.description ? `
+                        <div class="flex items-start">
+                            <span class="w-24 text-gray-500 pt-1">任务描述：</span>
+                            <span>${task.description}</span>
+                        </div>
+                    ` : ''}
+                    <div class="flex items-center">
+                        <span class="w-24 text-gray-500">截止时间：</span>
+                        <span>${formatDateTimeForDisplay(task.dueDateTime)}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-24 text-gray-500">优先级：</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium 
+                            ${task.priority === 'P0' ? 'bg-red-100 text-red-800' : 
+                              task.priority === 'P1' ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-gray-100 text-gray-800'}">
+                            ${task.priority}
+                        </span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-24 text-gray-500">分类：</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium 
+                            ${task.category === 'bms' ? 'bg-blue-100 text-blue-800' : 
+                              task.category === 'nvh' ? 'bg-green-100 text-green-800' : 
+                              task.category === 'dynamic' ? 'bg-purple-100 text-purple-800' : 
+                              task.category === 'feishu_ai' ? 'bg-pink-100 text-pink-800' : 
+                              task.category === 'other' ? 'bg-gray-100 text-gray-800' : 
+                              task.category === 'learning' ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-indigo-100 text-indigo-800'}">
+                            ${categoryNames[task.category] || task.category}
+                        </span>
+                    </div>
+                    <div class="pt-2">
+                        <button id="createTaskFromAi" class="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors">
+                            <i class="fa fa-plus-circle mr-1"></i>创建任务
+                        </button>
+                    </div>
+                `;
+                
+                // 绑定创建任务按钮事件
+                document.getElementById('createTaskFromAi').addEventListener('click', function() {
+                    createTaskFromAiResult(task);
+                });
+            }
+            
+            function createTaskFromAiResult(task) {
+                const newTask = {
+                    id: Date.now().toString(),
+                    title: task.title,
+                    description: task.description,
+                    category: task.category,
+                    priority: task.priority,
+                    dueDateTime: task.dueDateTime,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                tasks.unshift(newTask);
+                saveData();
+                renderTasks();
+                updateTaskStats();
+                closeAiAssistantModal();
+                showToast('任务创建成功', 'success');
+            }
+            
+            // 分类管理相关函数
+            function getDefaultCategories() {
+                return [
+                    { id: 'bms', name: 'BMS', key: 'bms', color: 'bg-blue-100 text-blue-800', isDefault: true, order: 1 },
+                    { id: 'nvh', name: 'NVH', key: 'nvh', color: 'bg-green-100 text-green-800', isDefault: true, order: 2 },
+                    { id: 'dynamic', name: '动态性能', key: 'dynamic', color: 'bg-purple-100 text-purple-800', isDefault: true, order: 3 },
+                    { id: 'feishu_ai', name: '飞书AI诊断', key: 'feishu_ai', color: 'bg-pink-100 text-pink-800', isDefault: true, order: 4 },
+                    { id: 'other', name: '其他', key: 'other', color: 'bg-gray-100 text-gray-800', isDefault: true, order: 5 },
+                    { id: 'learning', name: '学习', key: 'learning', color: 'bg-yellow-100 text-yellow-800', isDefault: true, order: 6 },
+                    { id: 'huangshan', name: '黄山', key: 'huangshan', color: 'bg-indigo-100 text-indigo-800', isDefault: true, order: 7 }
+                ];
+            }
+            
+            function renderCategories() {
+                // 按顺序排序分类
+                const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+                
+                // 清空选择框
+                const taskCategorySelect = document.getElementById('taskCategory');
+                taskCategorySelect.innerHTML = '';
+                
+                // 添加分类选项
+                sortedCategories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.key;
+                    option.textContent = category.name;
+                    taskCategorySelect.appendChild(option);
+                });
+                
+                // 更新编辑任务模态框中的分类选择
+                const editTaskCategorySelect = document.getElementById('editTaskCategory');
+                if (editTaskCategorySelect) {
+                    editTaskCategorySelect.innerHTML = '';
+                    sortedCategories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.key;
+                        option.textContent = category.name;
+                        editTaskCategorySelect.appendChild(option);
+                    });
+                }
+                
+                // 更新分类过滤下拉框
+                const categoryFilterSelect = document.getElementById('categoryFilter');
+                if (categoryFilterSelect) {
+                    // 保留"所有分类"选项
+                    const allOption = categoryFilterSelect.querySelector('option[value="all"]');
+                    categoryFilterSelect.innerHTML = '';
+                    if (allOption) {
+                        categoryFilterSelect.appendChild(allOption);
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = 'all';
+                        option.textContent = '所有分类';
+                        categoryFilterSelect.appendChild(option);
+                    }
+                    
+                    // 添加分类选项
+                    sortedCategories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.key;
+                        option.textContent = category.name;
+                        categoryFilterSelect.appendChild(option);
+                    });
+                }
+            }
+            
+            function showCategoryManager() {
+                // 复制当前分类数据到临时数组
+                tempCategories = JSON.parse(JSON.stringify(categories));
+                
+                // 渲染分类列表
+                renderCategoriesList();
+                
+                // 显示模态框
+                elements.categoryManagerModal.classList.remove('hidden');
+                elements.categoryManagerModal.classList.add('flex');
+                setTimeout(() => {
+                    elements.categoryManagerModalContent.classList.remove('scale-95', 'opacity-0');
+                    elements.categoryManagerModalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+            
+            function closeCategoryManager() {
+                elements.categoryManagerModalContent.classList.remove('scale-100', 'opacity-100');
+                elements.categoryManagerModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.categoryManagerModal.classList.remove('flex');
+                    elements.categoryManagerModal.classList.add('hidden');
+                    // 重置临时数据
+                    tempCategories = [];
+                }, 300);
+            }
+            
+            function renderCategoriesList() {
+                // 按顺序排序分类
+                const sortedCategories = [...tempCategories].sort((a, b) => a.order - b.order);
+                
+                // 清空列表
+                elements.categoriesList.innerHTML = '';
+                
+                // 添加分类项
+                sortedCategories.forEach((category, index) => {
+                    const categoryItem = document.createElement('div');
+                    categoryItem.className = 'category-item flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 transition-all duration-200 hover:shadow-sm cursor-move';
+                    categoryItem.setAttribute('data-category-id', category.id);
+                    
+                    categoryItem.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center mr-3 cursor-pointer edit-category-color" data-category-id="${category.id}">
+                                <div class="w-4 h-4 rounded-full ${category.color.split(' ')[0]}"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">${category.name}</p>
+                                <p class="text-xs text-gray-500">${category.key}</p>
+                            </div>
+                            ${category.isDefault ? `
+                                <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">默认</span>
+                            ` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="edit-category-btn text-gray-400 hover:text-primary focus:outline-none transition-colors" data-category-id="${category.id}">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                            ${!category.isDefault ? `
+                                <button class="delete-category-btn text-gray-400 hover:text-accent focus:outline-none transition-colors" data-category-id="${category.id}">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            ` : ''}
+                            <div class="cursor-move text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-bars"></i>
+                            </div>
+                        </div>
+                    `;
+                    
+                    elements.categoriesList.appendChild(categoryItem);
+                });
+                
+                // 绑定事件
+                document.querySelectorAll('.edit-category-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const categoryId = this.getAttribute('data-category-id');
+                        editCategory(categoryId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-category-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const categoryId = this.getAttribute('data-category-id');
+                        deleteCategory(categoryId);
+                    });
+                });
+                
+                document.querySelectorAll('.edit-category-color').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const categoryId = this.getAttribute('data-category-id');
+                        editCategoryColor(categoryId);
+                    });
+                });
+                
+                // 简单的拖拽排序功能
+                makeCategoriesSortable();
+            }
+            
+            function makeCategoriesSortable() {
+                const items = elements.categoriesList.querySelectorAll('.category-item');
+                let draggedItem = null;
+                
+                items.forEach(item => {
+                    item.setAttribute('draggable', 'true');
+                    
+                    item.addEventListener('dragstart', function() {
+                        draggedItem = this;
+                        setTimeout(() => {
+                            this.classList.add('opacity-50');
+                        }, 0);
+                    });
+                    
+                    item.addEventListener('dragend', function() {
+                        this.classList.remove('opacity-50');
+                        draggedItem = null;
+                    });
+                    
+                    item.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                    });
+                    
+                    item.addEventListener('dragenter', function(e) {
+                        e.preventDefault();
+                        if (this !== draggedItem) {
+                            this.classList.add('bg-gray-50');
+                        }
+                    });
+                    
+                    item.addEventListener('dragleave', function() {
+                        this.classList.remove('bg-gray-50');
+                    });
+                    
+                    item.addEventListener('drop', function() {
+                        this.classList.remove('bg-gray-50');
+                        
+                        if (this !== draggedItem) {
+                            const currentPos = Array.from(items).indexOf(draggedItem);
+                            const newPos = Array.from(items).indexOf(this);
+                            
+                            if (currentPos < newPos) {
+                                elements.categoriesList.insertBefore(draggedItem, this.nextSibling);
+                            } else {
+                                elements.categoriesList.insertBefore(draggedItem, this);
+                            }
+                            
+                            // 更新顺序
+                            updateCategoriesOrder();
+                        }
+                    });
+                });
+            }
+            
+            function updateCategoriesOrder() {
+                const items = elements.categoriesList.querySelectorAll('.category-item');
+                items.forEach((item, index) => {
+                    const categoryId = item.getAttribute('data-category-id');
+                    const category = tempCategories.find(c => c.id === categoryId);
+                    if (category) {
+                        category.order = index + 1;
+                    }
+                });
+            }
+            
+            function addNewCategory() {
+                // 重置表单
+                elements.editCategoryForm.reset();
+                elements.editCategoryId.value = '';
+                elements.editCategoryColor.value = 'bg-blue-100 text-blue-800';
+                elements.editCategoryTitle.textContent = '添加新分类';
+                editingCategoryId = null;
+                
+                // 重置颜色选择器
+                resetColorSelector();
+                
+                // 显示模态框
+                elements.editCategoryModal.classList.remove('hidden');
+                elements.editCategoryModal.classList.add('flex');
+                setTimeout(() => {
+                    elements.editCategoryModalContent.classList.remove('scale-95', 'opacity-0');
+                    elements.editCategoryModalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                
+                elements.editCategoryName.focus();
+            }
+            
+            function editCategory(categoryId) {
+                const category = tempCategories.find(c => c.id === categoryId);
+                if (!category) return;
+                
+                // 填充表单
+                elements.editCategoryId.value = category.id;
+                elements.editCategoryName.value = category.name;
+                elements.editCategoryKey.value = category.key;
+                elements.editCategoryColor.value = category.color;
+                elements.editCategoryTitle.textContent = '编辑分类';
+                editingCategoryId = categoryId;
+                
+                // 设置颜色选择器
+                resetColorSelector();
+                document.querySelector(`.color-option[data-color="${category.color}"]`).classList.add('border-2', 'border-primary');
+                
+                // 显示模态框
+                elements.editCategoryModal.classList.remove('hidden');
+                elements.editCategoryModal.classList.add('flex');
+                setTimeout(() => {
+                    elements.editCategoryModalContent.classList.remove('scale-95', 'opacity-0');
+                    elements.editCategoryModalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+            
+            function editCategoryColor(categoryId) {
+                const category = tempCategories.find(c => c.id === categoryId);
+                if (!category) return;
+                
+                // 创建颜色选择器模态框
+                const colorOptions = [
+                    'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-purple-100 text-purple-800',
+                    'bg-pink-100 text-pink-800', 'bg-yellow-100 text-yellow-800', 'bg-indigo-100 text-indigo-800',
+                    'bg-red-100 text-red-800', 'bg-teal-100 text-teal-800', 'bg-orange-100 text-orange-800',
+                    'bg-gray-100 text-gray-800', 'bg-cyan-100 text-cyan-800', 'bg-lime-100 text-lime-800'
+                ];
+                
+                let colorSelectorHTML = `
+                    <div class="p-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-3">选择颜色</h4>
+                        <div class="grid grid-cols-6 gap-2">
+                `;
+                
+                colorOptions.forEach(color => {
+                    const isSelected = category.color === color;
+                    colorSelectorHTML += `
+                        <button type="button" class="color-option w-8 h-8 rounded-full ${color.split(' ')[0]} border-2 ${isSelected ? 'border-primary' : 'border-transparent'} hover:border-primary transition-colors" data-color="${color}"></button>
+                    `;
+                });
+                
+                colorSelectorHTML += `
+                        </div>
+                    </div>
+                `;
+                
+                // 显示确认对话框
+                showConfirmDialog(
+                    '更改分类颜色',
+                    colorSelectorHTML,
+                    (confirmed, selectedColor) => {
+                        if (confirmed && selectedColor) {
+                            category.color = selectedColor;
+                            renderCategoriesList();
+                        }
+                    },
+                    true // 自定义内容
+                );
+                
+                // 绑定颜色选择事件
+                setTimeout(() => {
+                    document.querySelectorAll('.color-option').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const color = this.getAttribute('data-color');
+                            document.querySelectorAll('.color-option').forEach(b => {
+                                b.classList.remove('border-2', 'border-primary');
+                                b.classList.add('border-transparent');
+                            });
+                            this.classList.remove('border-transparent');
+                            this.classList.add('border-2', 'border-primary');
+                            
+                            // 更新确认按钮的点击行为
+                            const confirmOkBtn = document.getElementById('confirmOk');
+                            confirmOkBtn.onclick = function() {
+                                hideConfirmDialog();
+                                if (typeof confirmCallback === 'function') {
+                                    confirmCallback(true, color);
+                                }
+                            };
+                        });
+                    });
+                }, 100);
+            }
+            
+            function deleteCategory(categoryId) {
+                const category = tempCategories.find(c => c.id === categoryId);
+                if (!category || category.isDefault) return;
+                
+                // 检查是否有任务使用此分类
+                const tasksWithCategory = tasks.filter(task => task.category === category.key);
+                const message = tasksWithCategory.length > 0 
+                    ? `确定要删除分类"${category.name}"吗？有${tasksWithCategory.length}个任务使用此分类，它们将被移至"其他"分类。`
+                    : `确定要删除分类"${category.name}"吗？`;
+                
+                showConfirmDialog(
+                    '删除分类',
+                    message,
+                    (confirmed) => {
+                        if (confirmed) {
+                            // 删除分类
+                            tempCategories = tempCategories.filter(c => c.id !== categoryId);
+                            
+                            // 更新使用此分类的任务
+                            if (tasksWithCategory.length > 0) {
+                                tasks = tasks.map(task => {
+                                    if (task.category === category.key) {
+                                        return { ...task, category: 'other' };
+                                    }
+                                    return task;
+                                });
+                            }
+                            
+                            renderCategoriesList();
+                        }
+                    }
+                );
+            }
+            
+            function closeEditCategoryModal() {
+                elements.editCategoryModalContent.classList.remove('scale-100', 'opacity-100');
+                elements.editCategoryModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.editCategoryModal.classList.remove('flex');
+                    elements.editCategoryModal.classList.add('hidden');
+                    editingCategoryId = null;
+                }, 300);
+            }
+            
+            function saveCategory() {
+                const name = elements.editCategoryName.value.trim();
+                const key = elements.editCategoryKey.value.trim().toLowerCase().replace(/\s+/g, '_');
+                const color = elements.editCategoryColor.value;
+                
+                if (!name || !key) {
+                    showToast('请填写分类名称和标识', 'error');
+                    return;
+                }
+                
+                // 检查标识是否已存在
+                const existingCategory = tempCategories.find(c => c.key === key && c.id !== editingCategoryId);
+                if (existingCategory) {
+                    showToast('分类标识已存在', 'error');
+                    return;
+                }
+                
+                if (editingCategoryId) {
+                    // 编辑现有分类
+                    const category = tempCategories.find(c => c.id === editingCategoryId);
+                    if (category) {
+                        // 如果更改了key，需要更新使用此分类的任务
+                        if (category.key !== key) {
+                            tasks = tasks.map(task => {
+                                if (task.category === category.key) {
+                                    return { ...task, category: key };
+                                }
+                                return task;
+                            });
+                        }
+                        
+                        category.name = name;
+                        category.key = key;
+                        category.color = color;
+                    }
+                } else {
+                    // 添加新分类
+                    const newCategory = {
+                        id: Date.now().toString(),
+                        name: name,
+                        key: key,
+                        color: color,
+                        isDefault: false,
+                        order: tempCategories.length + 1
+                    };
+                    tempCategories.push(newCategory);
+                }
+                
+                closeEditCategoryModal();
+                renderCategoriesList();
+            }
+            
+            function saveCategoryChanges() {
+                // 更新分类数据
+                categories = tempCategories;
+                
+                // 保存到本地存储
+                localStorage.setItem('categories', JSON.stringify(categories));
+                
+                // 更新UI
+                renderCategories();
+                renderTasks();
+                
+                closeCategoryManager();
+                showToast('分类设置已保存', 'success');
+            }
+            
+            function resetColorSelector() {
+                document.querySelectorAll('.color-option').forEach(btn => {
+                    btn.classList.remove('border-2', 'border-primary');
+                    btn.classList.add('border-transparent');
+                });
+                
+                // 绑定颜色选择事件
+                document.querySelectorAll('.color-option').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        document.querySelectorAll('.color-option').forEach(b => {
+                            b.classList.remove('border-2', 'border-primary');
+                            b.classList.add('border-transparent');
+                        });
+                        this.classList.remove('border-transparent');
+                        this.classList.add('border-2', 'border-primary');
+                        elements.editCategoryColor.value = this.getAttribute('data-color');
+                    });
+                });
+            }
+            
+            // 辅助函数：获取分类颜色
+            function getCategoryColor(categoryKey) {
+                const category = categories.find(c => c.key === categoryKey);
+                return category ? category.color : 'bg-gray-100 text-gray-800';
+            }
+            
+            // 辅助函数：获取分类名称
+            function getCategoryName(categoryKey) {
+                const category = categories.find(c => c.key === categoryKey);
+                return category ? category.name : categoryKey.toUpperCase();
+            }
+            
+            // 扩展showConfirmDialog函数以支持自定义内容
+            const originalShowConfirmDialog = showConfirmDialog;
+            showConfirmDialog = function(title, message, callback, isCustomContent = false) {
+                elements.confirmTitle.textContent = title;
+                
+                if (isCustomContent) {
+                    elements.confirmMessage.innerHTML = message;
+                } else {
+                    elements.confirmMessage.textContent = message;
+                }
+                
+                confirmCallback = callback;
+                
+                elements.confirmOverlay.classList.remove('hidden');
+                elements.confirmOverlay.classList.add('flex');
+                
+                setTimeout(() => {
+                    elements.confirmDialog.classList.remove('scale-95', 'opacity-0');
+                    elements.confirmDialog.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            };
         });
     </script>
 
