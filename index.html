@@ -1,9 +1,12 @@
-<html lang="zh-CN"><head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>待办事项管理 | TaskFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -298,8 +301,13 @@
                 <!-- 右侧：任务列表区域 -->
                 <div class="p-6 md:p-8 w-full md:w-2/3">
                     <div class="mb-6">
-                        <h2 class="text-xl font-semibold text-gray-700 flex items-center mb-4">
-                            <i class="fa fa-tasks text-primary mr-2"></i>任务列表
+                        <h2 class="text-xl font-semibold text-gray-700 flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <i class="fa fa-tasks text-primary mr-2"></i>任务列表
+                            </div>
+                            <button id="exportTasks" class="px-3.5 py-1.5 rounded-md text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+                                <i class="fa fa-download mr-1"></i>导出Excel
+                            </button>
                         </h2>
                         
                         <!-- 搜索框 -->
@@ -324,6 +332,7 @@
                                 <option value="learning">学习</option>
                                 <option value="huangshan">黄山</option>
                             </select>
+
                             <button id="clearCompleted" class="px-3.5 py-1.5 rounded-md text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors ml-auto">
                                 <i class="fa fa-trash-o mr-1"></i>清空已完成
                             </button>
@@ -459,12 +468,39 @@
                             </div>
                             <h3 class="text-xl font-semibold text-gray-800">AI任务助手</h3>
                         </div>
-                        <button id="closeAiAssistantModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
-                            <i class="fa fa-times text-xl"></i>
-                        </button>
+                        <div class="flex items-center">
+                            <button id="toggleAiSettings" class="text-gray-400 hover:text-gray-600 focus:outline-none mr-4" title="API设置">
+                                <i class="fa fa-cog text-xl"></i>
+                            </button>
+                            <button id="closeAiAssistantModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fa fa-times text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="p-6">
+                        <div id="aiSettingsPanel" class="hidden mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-sm font-semibold text-gray-700">API 设置</h4>
+                                <span class="text-xs text-gray-500">配置保存在本地浏览器中</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="aiApiKey" class="block text-xs font-medium text-gray-600 mb-1">DeepSeek API Key</label>
+                                    <input type="password" id="aiApiKey" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="sk-...">
+                                </div>
+                                <div>
+                                    <label for="aiApiUrl" class="block text-xs font-medium text-gray-600 mb-1">API Base URL</label>
+                                    <input type="text" id="aiApiUrl" class="w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="https://api.deepseek.com" value="https://api.deepseek.com">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button id="saveAiSettings" class="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors">
+                                        保存设置
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-4">
                             <label for="aiInput" class="block text-sm font-medium text-gray-700 mb-2">告诉AI你的待办事项</label>
                             <div class="relative">
@@ -642,7 +678,8 @@
                 editTaskPriority: document.getElementById('editTaskPriority'),
                 editTaskDueDateTime: document.getElementById('editTaskDueDateTime'),
                 editDateError: document.getElementById('editDateError'),
-                clearCompleted: document.getElementById('clearCompleted'),
+                exportTasks: document.getElementById('exportTasks'),
+            clearCompleted: document.getElementById('clearCompleted'),
                 emptyTrash: document.getElementById('emptyTrash'),
                 toastNotification: document.getElementById('toastNotification'),
                 confirmOverlay: document.getElementById('confirmOverlay'),
@@ -687,8 +724,18 @@
                 editCategoryId: document.getElementById('editCategoryId'),
                 editCategoryName: document.getElementById('editCategoryName'),
                 editCategoryKey: document.getElementById('editCategoryKey'),
-                editCategoryColor: document.getElementById('editCategoryColor')
+                editCategoryColor: document.getElementById('editCategoryColor'),
+                
+                // AI 设置相关元素
+                toggleAiSettings: document.getElementById('toggleAiSettings'),
+                aiSettingsPanel: document.getElementById('aiSettingsPanel'),
+                aiApiKey: document.getElementById('aiApiKey'),
+                aiApiUrl: document.getElementById('aiApiUrl'),
+                saveAiSettings: document.getElementById('saveAiSettings')
             };
+
+            // 初始化 AI 设置
+            initAiSettings();
 
             // 初始化应用
             function initApp() {
@@ -781,6 +828,7 @@
                 elements.navTrash.addEventListener('click', () => showSection('trash'));
                 
                 // 清空已完成按钮
+                elements.exportTasks.addEventListener('click', exportTasksToExcel);
                 elements.clearCompleted.addEventListener('click', handleClearCompleted);
                 
                 // 清空回收站按钮
@@ -890,6 +938,67 @@
                 setTimeout(() => {
                     toast.classList.add('-translate-y-full', 'opacity-0');
                 }, 3000);
+            }
+
+            // 导出任务为Excel
+            function exportTasksToExcel() {
+                try {
+                    // 获取所有任务数据
+                    const tasksToExport = JSON.parse(localStorage.getItem('tasks')) || [];
+                    
+                    if (tasksToExport.length === 0) {
+                        showToast('没有任务数据可以导出', 'info');
+                        return;
+                    }
+
+                    // 获取分类数据
+                    const categories = JSON.parse(localStorage.getItem('categories')) || [];
+                    const categoryMap = {};
+                    categories.forEach(cat => {
+                        categoryMap[cat.key] = cat.name;
+                    });
+
+                    // 准备Excel数据
+                    const excelData = tasksToExport.map(task => {
+                        return {
+                            '任务分类': categoryMap[task.category] || task.category || '未分类',
+                            '任务标题': task.title || '',
+                            '任务描述': task.description || '',
+                            '紧急程度': task.priority === 'P0' ? 'P0' : (task.priority === 'P1' ? 'P1' : '-'),
+                            '截止日期': task.dueDateTime ? new Date(task.dueDateTime).toLocaleDateString('zh-CN') : '',
+                            '是否已完成': task.completed ? '是' : '否'
+                        };
+                    });
+
+                    // 创建工作簿
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(excelData);
+
+                    // 设置列宽
+                    const colWidths = [
+                        { wch: 15 }, // 任务分类
+                        { wch: 25 }, // 任务标题
+                        { wch: 40 }, // 任务描述
+                        { wch: 10 }, // 紧急程度
+                        { wch: 15 }, // 截止日期
+                        { wch: 10 }  // 是否已完成
+                    ];
+                    ws['!cols'] = colWidths;
+
+                    // 添加工作表到工作簿
+                    XLSX.utils.book_append_sheet(wb, ws, '任务列表');
+
+                    // 生成文件名
+                    const fileName = `任务列表_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+                    // 导出文件
+                    XLSX.writeFile(wb, fileName);
+
+                    showToast('任务数据已成功导出为Excel文件', 'success');
+                } catch (error) {
+                    console.error('导出Excel文件失败:', error);
+                    showToast('导出Excel文件失败，请重试', 'error');
+                }
             }
 
             // 显示确认对话框
@@ -1654,7 +1763,47 @@
                 }, 300);
             }
             
-            function processAiInput() {
+            // AI 设置初始化
+            function initAiSettings() {
+                // 加载已保存的设置
+                const savedApiKey = localStorage.getItem('deepseek_api_key');
+                const savedApiUrl = localStorage.getItem('deepseek_api_url');
+                
+                if (savedApiKey) {
+                    elements.aiApiKey.value = savedApiKey;
+                }
+                if (savedApiUrl) {
+                    elements.aiApiUrl.value = savedApiUrl;
+                }
+                
+                // 切换设置面板显示
+                elements.toggleAiSettings.addEventListener('click', () => {
+                    elements.aiSettingsPanel.classList.toggle('hidden');
+                });
+                
+                // 保存设置
+                elements.saveAiSettings.addEventListener('click', () => {
+                    const apiKey = elements.aiApiKey.value.trim();
+                    const apiUrl = elements.aiApiUrl.value.trim();
+                    
+                    if (apiKey) {
+                        localStorage.setItem('deepseek_api_key', apiKey);
+                    } else {
+                        localStorage.removeItem('deepseek_api_key');
+                    }
+                    
+                    if (apiUrl) {
+                        localStorage.setItem('deepseek_api_url', apiUrl);
+                    } else {
+                        localStorage.removeItem('deepseek_api_url');
+                    }
+                    
+                    showToast('设置已保存', 'success');
+                    elements.aiSettingsPanel.classList.add('hidden');
+                });
+            }
+
+            async function processAiInput() {
                 const inputText = elements.aiInput.value.trim();
                 if (!inputText) {
                     showToast('请输入任务描述', 'error');
@@ -1666,17 +1815,128 @@
                 elements.aiResult.classList.add('hidden');
                 elements.processAiInput.disabled = true;
                 
-                // 模拟AI处理延迟
-                setTimeout(() => {
-                    const parsedTask = parseNaturalLanguage(inputText);
+                try {
+                    const apiKey = localStorage.getItem('deepseek_api_key');
+                    let parsedTask;
+
+                    if (apiKey) {
+                        // 使用大模型 API
+                        parsedTask = await callDeepSeekAPI(inputText, apiKey);
+                    } else {
+                        // 无 Key，使用本地模拟回退方案
+                        showToast('未配置 API Key，使用本地模拟模式', 'info');
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟延迟
+                        parsedTask = parseNaturalLanguageFallback(inputText);
+                    }
+                    
                     displayAiResult(parsedTask);
                     elements.aiProcessing.classList.add('hidden');
                     elements.aiResult.classList.remove('hidden');
+                } catch (error) {
+                    console.error('AI Processing Error:', error);
+                    showToast('AI 解析失败，请重试', 'error');
+                    elements.aiProcessing.classList.add('hidden');
+                } finally {
                     elements.processAiInput.disabled = false;
-                }, 1500);
+                }
             }
             
-            function parseNaturalLanguage(text) {
+            async function callDeepSeekAPI(text, apiKey) {
+                const baseUrl = localStorage.getItem('deepseek_api_url') || 'https://api.deepseek.com';
+                const apiUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+                
+                const now = new Date();
+                const currentDateTimeStr = now.toLocaleString('zh-CN', { hour12: false });
+                
+                const systemPrompt = `你是一个智能任务助手。请从用户的输入中提取任务信息，并以严格的 JSON 格式返回。
+当前时间是：${currentDateTimeStr}
+你需要提取以下字段：
+- title: 任务标题（必填）
+- description: 任务描述（如果用户提供了细节）
+- dueDateTime: 截止时间（ISO 8601 格式，YYYY-MM-DDTHH:mm:ss.sssZ，基于当前时间推算，如果未提及则留空）
+- priority: 优先级，仅限 'P0' (高/紧急), 'P1' (中/普通), 'P2' (低)。默认 'P1'。
+- category: 分类，仅限 'bms', 'nvh', 'dynamic', 'feishu_ai', 'learning', 'huangshan', 'other'。默认为 'other'。
+
+请直接返回 JSON 对象，不要包含 markdown 标记（如 \`\`\`json ... \`\`\`）或其他文本。`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-reasoner', // 用户指定 R1，通常对应 deepseek-reasoner
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: text }
+                            ],
+                            temperature: 0.1
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(`API Error: ${response.status} ${errorData.error?.message || ''}`);
+                    }
+
+                    const data = await response.json();
+                    let content = data.choices[0].message.content;
+                    
+                    // 清理可能存在的 markdown 标记
+                    content = content.replace(/```json\s*|\s*```/g, '').trim();
+                    
+                    // 尝试解析 JSON
+                    try {
+                        const task = JSON.parse(content);
+                        // 确保字段存在
+                        return {
+                            title: task.title || text.substring(0, 20),
+                            description: task.description || '',
+                            dueDateTime: task.dueDateTime || '',
+                            priority: ['P0', 'P1', 'P2'].includes(task.priority) ? task.priority : 'P1',
+                            category: ['bms', 'nvh', 'dynamic', 'feishu_ai', 'learning', 'huangshan', 'other'].includes(task.category) ? task.category : 'other'
+                        };
+                    } catch (e) {
+                        console.error('JSON Parse Error:', e);
+                        throw new Error('无法解析模型返回的数据');
+                    }
+                } catch (error) {
+                    // 如果是 R1 模型调用失败（可能是模型名不对），尝试 fallback 到 deepseek-chat
+                    if (error.message.includes('404') || error.message.includes('model')) {
+                        console.warn('DeepSeek R1 model failed, trying deepseek-chat...');
+                        return await callDeepSeekAPIWithModel(text, apiKey, 'deepseek-chat', systemPrompt, apiUrl);
+                    }
+                    throw error;
+                }
+            }
+
+            // 辅助函数：指定模型调用（用于重试）
+            async function callDeepSeekAPIWithModel(text, apiKey, model, systemPrompt, apiUrl) {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: text }
+                        ],
+                        temperature: 0.1
+                    })
+                });
+                 if (!response.ok) throw new Error('API Error');
+                 const data = await response.json();
+                 let content = data.choices[0].message.content;
+                 content = content.replace(/```json\s*|\s*```/g, '').trim();
+                 return JSON.parse(content);
+            }
+            
+            function parseNaturalLanguageFallback(text) {
                 // 这里是模拟的自然语言解析逻辑
                 const task = {
                     title: '',
@@ -2407,4 +2667,5 @@
         });
     </script>
 
-</body></html>
+</body>
+</html>
