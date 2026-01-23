@@ -340,7 +340,7 @@
                     </div>
 
                     <!-- 任务列表 -->
-                    <div id="taskList" class="space-y-3 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                    <div id="taskList" class="space-y-3 max-h-[100%] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                         <!-- 任务项会通过JavaScript动态添加 -->
                         <div class="text-center text-gray-400 py-10" id="emptyTaskList">
                             <i class="fa fa-inbox text-4xl mb-3 block text-gray-300"></i>
@@ -619,6 +619,8 @@
             let searchQuery = '';
             let editingCategoryId = null;
             let tempCategories = []; // 用于分类管理的临时数据
+            let currentPage = 1;
+            let tasksPerPage = 10;
             
             // 为现有任务添加优先级属性（如果没有）
             tasks = tasks.map(task => {
@@ -1145,6 +1147,7 @@
                 
                 tasks.unshift(newTask);
                 saveData();
+                resetPagination();
                 renderTasks();
                 updateTaskStats();
                 
@@ -1159,6 +1162,11 @@
                 elements.taskCategory.value = 'bms'; // 设置默认分类
                 
                 showToast('任务添加成功', 'success');
+            }
+
+            // 重置分页
+            function resetPagination() {
+                currentPage = 1;
             }
 
             // 编辑任务
@@ -1221,6 +1229,7 @@
                 });
                 
                 saveData();
+                resetPagination();
                 renderTasks();
                 updateTaskStats();
                 closeEditTaskModal();
@@ -1253,6 +1262,7 @@
                 });
                 
                 saveData();
+                resetPagination();
                 renderTasks();
                 updateTaskStats();
             }
@@ -1537,17 +1547,26 @@
                     return new Date(a.dueDateTime) - new Date(b.dueDateTime);
                 });
                 
+                // 计算总页数
+                const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+                
+                // 获取当前页的任务
+                const startIndex = (currentPage - 1) * tasksPerPage;
+                const endIndex = startIndex + tasksPerPage;
+                const currentPageTasks = filteredTasks.slice(startIndex, endIndex);
+                
                 // 清空列表
                 elements.taskList.innerHTML = '';
                 
                 // 检查是否有任务
                 if (filteredTasks.length === 0) {
                     elements.taskList.appendChild(elements.emptyTaskList);
+                    renderPagination(0, 1);
                     return;
                 }
                 
                 // 添加任务项
-                filteredTasks.forEach((task, index) => {
+                currentPageTasks.forEach((task, index) => {
                     const taskElement = document.createElement('div');
                     
                     // 计算动画延迟，创建级联效果
@@ -1640,6 +1659,70 @@
                     
                     elements.taskList.appendChild(taskElement);
                 });
+                
+                // 渲染分页控件
+                renderPagination(filteredTasks.length, totalPages);
+            }
+
+            // 渲染分页控件
+            function renderPagination(totalTasks, totalPages) {
+                // 移除旧的分页控件
+                const oldPagination = document.querySelector('.pagination-container');
+                if (oldPagination) {
+                    oldPagination.remove();
+                }
+                
+                // 如果没有任务或只有一页，不显示分页
+                if (totalTasks === 0 || totalPages <= 1) {
+                    return;
+                }
+                
+                // 创建新的分页容器
+                const paginationContainer = document.createElement('div');
+                paginationContainer.className = 'flex justify-center items-center mt-6 space-x-1 pagination-container';
+                
+                // 添加到DOM
+                elements.taskList.parentNode.appendChild(paginationContainer);
+                
+                // 上一页按钮
+                const prevButton = document.createElement('button');
+                prevButton.className = `px-3 py-1 rounded-md text-sm transition-colors ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'}`;
+                prevButton.innerHTML = '<i class="fa fa-chevron-left"></i>';
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderTasks();
+                    }
+                });
+                paginationContainer.appendChild(prevButton);
+                
+                // 页码按钮
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.className = `px-3 py-1 rounded-md text-sm transition-colors ${i === currentPage ? 'bg-primary text-white' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'}`;
+                    pageButton.textContent = i;
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderTasks();
+                    });
+                    paginationContainer.appendChild(pageButton);
+                }
+                
+                // 下一页按钮
+                const nextButton = document.createElement('button');
+                nextButton.className = `px-3 py-1 rounded-md text-sm transition-colors ${currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'}`;
+                nextButton.innerHTML = '<i class="fa fa-chevron-right"></i>';
+                nextButton.disabled = currentPage === totalPages;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderTasks();
+                    }
+                });
+                paginationContainer.appendChild(nextButton);
+                
+
             }
 
             // 渲染回收站列表
@@ -2151,6 +2234,7 @@
                 
                 tasks.unshift(newTask);
                 saveData();
+                resetPagination();
                 renderTasks();
                 updateTaskStats();
                 closeAiAssistantModal();
